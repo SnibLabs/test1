@@ -23,6 +23,16 @@ const PLAYER_ANIMATION_SPEED = 6; // frames per animation step
 // Scale factor for rendering the player (adjust this to make the image smaller)
 const PLAYER_SCALE = 0.7; // 70% size
 
+// === BACKGROUND IMAGE URL ===
+const BACKGROUND_IMAGE_URL = "https://dcnmwoxzefwqmvvkpqap.supabase.co/storage/v1/object/public/sprite-studio-exports/6f1edf47-be71-4c38-9203-26202e227b0a/library/Term_1_1753857921658.png";
+let backgroundImage = null;
+let backgroundImageLoaded = false;
+(function preloadBackgroundImage() {
+    backgroundImage = new window.Image();
+    backgroundImage.src = BACKGROUND_IMAGE_URL;
+    backgroundImage.onload = () => { backgroundImageLoaded = true; };
+})();
+
 let playerSpriteImage = null;
 let playerSpriteLoaded = false;
 (function preloadPlayerSprite() {
@@ -556,8 +566,8 @@ class GameManager {
         if (this.state !== 'playing') return;
 
         this.frame++;
-        this.bgScroll += 1.7;
-        if (this.bgScroll > 64) this.bgScroll = 0;
+        // this.bgScroll += 1.7;
+        // if (this.bgScroll > 64) this.bgScroll = 0;
 
         // Player movement
         let dx = 0, dy = 0;
@@ -684,22 +694,23 @@ class GameManager {
         // Always show menu if in menu/gameover state
         if (this.state === 'menu' && !this.menuDiv) this.showMenu();
         if (this.state === 'gameover' && !this.menuDiv) this.showGameOver();
+
+        // Draw static background image (no scrolling, always at (0,0))
+        this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        this.drawBackground();
+
         if (this.state !== 'playing') {
-            // Draw faded background for menu/gameover
+            // Draw faded overlay for menu/gameover
             this.ctx.save();
-            this.ctx.globalAlpha = 0.2;
-            this.drawBackground();
+            this.ctx.globalAlpha = 0.4;
+            this.ctx.fillStyle = "#000";
+            this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             this.ctx.restore();
             return;
         }
 
         // Update game logic
         this.update();
-
-        // Draw everything
-        this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-        this.drawBackground();
 
         // Player, enemies, bullets
         this.player.render(this.ctx);
@@ -711,56 +722,65 @@ class GameManager {
     }
 
     drawBackground() {
-        // Post-apocalyptic cityscape (stylized) - dark, red, steel motif
-        this.ctx.save();
-        // Steel sky gradient
-        let grad = this.ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-        grad.addColorStop(0, '#222325');
-        grad.addColorStop(0.5, '#191a1b');
-        grad.addColorStop(1, '#11090a');
-        this.ctx.fillStyle = grad;
-        this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-        // Ruined city skyline silhouette (parallax)
-        for (let layer = 0; layer < 3; layer++) {
-            const yBase = [GAME_HEIGHT - 80, GAME_HEIGHT - 54, GAME_HEIGHT - 32][layer];
-            const color = ['#201e22', '#2c2428', '#3a2a30'][layer];
-            const speed = [0.3, 0.6, 1.1][layer];
-            this.ctx.save();
-            this.ctx.globalAlpha = 0.22 + 0.13 * layer;
-            this.ctx.fillStyle = color;
-            this.ctx.beginPath();
-            let offset = (GAME_WIDTH - (this.bgScroll * speed)) % GAME_WIDTH;
-            // Generate blocky buildings
-            for (let x = 0; x <= GAME_WIDTH + 80; x += 40 + Math.random()*20) {
-                let h = 24 + Math.random() * (18 + layer*9);
-                this.ctx.rect(offset + x, yBase - h, 24 + Math.random()*10, h);
+        // === Draw static background image, no scrolling, no parallax ===
+        if (backgroundImageLoaded) {
+            // Always draw at 0,0, and tile if needed to fill canvas
+            const imgWidth = backgroundImage.width;
+            const imgHeight = backgroundImage.height;
+            for (let x = 0; x < GAME_WIDTH; x += imgWidth) {
+                for (let y = 0; y < GAME_HEIGHT; y += imgHeight) {
+                    this.ctx.drawImage(backgroundImage, x, y, imgWidth, imgHeight);
+                }
             }
-            this.ctx.fill();
+        } else {
+            // Fallback: use previous stylized background if image not loaded yet
+            this.ctx.save();
+            // Steel sky gradient
+            let grad = this.ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
+            grad.addColorStop(0, '#222325');
+            grad.addColorStop(0.5, '#191a1b');
+            grad.addColorStop(1, '#11090a');
+            this.ctx.fillStyle = grad;
+            this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+            // Ruined city skyline silhouette (static, not parallax)
+            for (let layer = 0; layer < 3; layer++) {
+                const yBase = [GAME_HEIGHT - 80, GAME_HEIGHT - 54, GAME_HEIGHT - 32][layer];
+                const color = ['#201e22', '#2c2428', '#3a2a30'][layer];
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.22 + 0.13 * layer;
+                this.ctx.fillStyle = color;
+                this.ctx.beginPath();
+                // Generate blocky buildings
+                for (let x = 0; x <= GAME_WIDTH + 80; x += 40 + Math.random()*20) {
+                    let h = 24 + Math.random() * (18 + layer*9);
+                    this.ctx.rect(x, yBase - h, 24 + Math.random()*10, h);
+                }
+                this.ctx.fill();
+                this.ctx.restore();
+            }
+
+            // Red scanner beam (static position)
+            let scanY = GAME_HEIGHT - 100;
+            this.ctx.save();
+            this.ctx.globalAlpha = 0.15;
+            this.ctx.fillStyle = '#f00';
+            this.ctx.fillRect(0, scanY, GAME_WIDTH, 3);
+            this.ctx.restore();
+
+            // Distant glowing embers (static)
+            for (let i = 0; i < 16; i++) {
+                let px = ((i * 108) % (GAME_WIDTH + 32));
+                let py = GAME_HEIGHT - 20 - (i * 13) % 68;
+                this.ctx.beginPath();
+                this.ctx.arc(px, py, (i % 6 === 0) ? 2 : 1, 0, Math.PI * 2);
+                this.ctx.fillStyle = (i % 2 === 0) ? '#f33' : '#f99';
+                this.ctx.globalAlpha = 0.28 + (i%2)*0.1;
+                this.ctx.fill();
+            }
+
             this.ctx.restore();
         }
-
-        // Red scanner beam (moves horizontally)
-        let scanY = GAME_HEIGHT - 100 + Math.sin(this.frame * 0.03) * 28;
-        this.ctx.save();
-        this.ctx.globalAlpha = 0.15;
-        this.ctx.fillStyle = '#f00';
-        this.ctx.fillRect(0, scanY, GAME_WIDTH, 2 + Math.sin(this.frame * 0.09) * 2);
-        this.ctx.restore();
-
-        // Distant glowing embers
-        for (let i = 0; i < 16; i++) {
-            let px = ((i * 108) % (GAME_WIDTH + 32)) - (this.bgScroll * (1.2 + (i%3)*0.5));
-            let py = GAME_HEIGHT - 20 - (i * 13) % 68 + Math.sin(this.frame*0.02+i)*9;
-            if (px < 0) px += GAME_WIDTH;
-            this.ctx.beginPath();
-            this.ctx.arc(px, py, (i % 6 === 0) ? 2 : 1, 0, Math.PI * 2);
-            this.ctx.fillStyle = (i % 2 === 0) ? '#f33' : '#f99';
-            this.ctx.globalAlpha = 0.28 + (i%2)*0.1;
-            this.ctx.fill();
-        }
-
-        this.ctx.restore();
     }
 
     drawHUD() {
