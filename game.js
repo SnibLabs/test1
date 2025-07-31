@@ -11,53 +11,19 @@ const KEY_DOWN = 'ArrowDown';
 const KEY_SHOOT1 = ' ';
 const KEY_SHOOT2 = 'z';
 
-// --- Sprite configuration for player ---
-// Sprite sheet: https://dcnmwoxzefwqmvvkpqap.supabase.co/storage/v1/object/public/sprite-studio-exports/6f1edf47-be71-4c38-9203-26202e227b0a/library/Terminator_1753857454970.png
-const PLAYER_SPRITE_URL = "https://dcnmwoxzefwqmvvkpqap.supabase.co/storage/v1/object/public/sprite-studio-exports/6f1edf47-be71-4c38-9203-26202e227b0a/library/Terminator_1753857454970.png";
-// Sprite sheet details (assume 4 frames horizontally, 1 row, frame size 42x54, background transparent)
-const PLAYER_FRAME_WIDTH = 42;
-const PLAYER_FRAME_HEIGHT = 54;
-const PLAYER_ANIMATION_FRAMES = 4;
-const PLAYER_ANIMATION_SPEED = 6; // frames per animation step
-
-// Scale factor for rendering the player (adjust this to make the image smaller)
-const PLAYER_SCALE = 0.7; // 70% size
-
-// === BACKGROUND IMAGE URL ===
-const BACKGROUND_IMAGE_URL = "https://dcnmwoxzefwqmvvkpqap.supabase.co/storage/v1/object/public/sprite-studio-exports/6f1edf47-be71-4c38-9203-26202e227b0a/library/Term_1_1753857921658.png";
-let backgroundImage = null;
-let backgroundImageLoaded = false;
-(function preloadBackgroundImage() {
-    backgroundImage = new window.Image();
-    backgroundImage.src = BACKGROUND_IMAGE_URL;
-    backgroundImage.onload = () => { backgroundImageLoaded = true; };
-})();
-
-let playerSpriteImage = null;
-let playerSpriteLoaded = false;
-(function preloadPlayerSprite() {
-    playerSpriteImage = new window.Image();
-    playerSpriteImage.src = PLAYER_SPRITE_URL;
-    playerSpriteImage.onload = () => { playerSpriteLoaded = true; };
-})();
-
 class Player {
     constructor(x, y) {
-        // Use scaled width/height for positioning and collision
-        this.width = PLAYER_FRAME_WIDTH * PLAYER_SCALE;
-        this.height = PLAYER_FRAME_HEIGHT * PLAYER_SCALE;
         this.x = x;
         this.y = y;
+        this.width = 42;
+        this.height = 54; // taller for "Arnold" figure
         this.speed = 3.5;
+        this.color = '#bbb';
         this.bullets = [];
         this.shootCooldown = 0;
         this.lives = 3;
         this.invincible = 0;
         this.score = 0;
-
-        // Animation state
-        this.animFrame = 0;
-        this.animCounter = 0;
     }
 
     move(dx, dy) {
@@ -79,46 +45,145 @@ class Player {
         // Update bullets
         this.bullets.forEach(b => b.update());
         this.bullets = this.bullets.filter(b => b.x < GAME_WIDTH + 20 && !b.dead);
-
-        // Animate
-        if (playerSpriteLoaded) {
-            this.animCounter++;
-            if (this.animCounter >= PLAYER_ANIMATION_SPEED) {
-                this.animCounter = 0;
-                this.animFrame = (this.animFrame + 1) % PLAYER_ANIMATION_FRAMES;
-            }
-        }
     }
 
     render(ctx) {
         // Flicker if invincible
         if (this.invincible % 6 < 3) {
-            if (playerSpriteLoaded) {
-                ctx.save();
-                ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(
-                    playerSpriteImage,
-                    this.animFrame * PLAYER_FRAME_WIDTH, 0,
-                    PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT,
-                    this.x, this.y,
-                    PLAYER_FRAME_WIDTH * PLAYER_SCALE, PLAYER_FRAME_HEIGHT * PLAYER_SCALE
-                );
-                ctx.restore();
-            } else {
-                // Fallback: simple placeholder if image not loaded yet
-                ctx.save();
-                ctx.fillStyle = "#bbb";
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-                ctx.restore();
-            }
+            ctx.save();
+            ctx.translate(this.x, this.y);
+
+            // --- Arnold Schwarzenegger as The Terminator (T-800) stylized sprite ---
+            // Body proportions (side view, right-facing)
+            // Torso (black jacket)
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(18, 14);
+            ctx.lineTo(28, 14);
+            ctx.lineTo(36, 44);
+            ctx.lineTo(10, 44);
+            ctx.closePath();
+            ctx.fillStyle = '#191a1b';
+            ctx.shadowColor = '#222';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.restore();
+
+            // Arms (jacket sleeves)
+            ctx.save();
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 7;
+            ctx.lineCap = 'round';
+            // Left arm (back, holding gun)
+            ctx.beginPath();
+            ctx.moveTo(17, 22);
+            ctx.lineTo(8, 35);
+            ctx.stroke();
+            // Right arm (front)
+            ctx.beginPath();
+            ctx.moveTo(29, 22);
+            ctx.lineTo(36, 32);
+            ctx.stroke();
+            ctx.restore();
+
+            // Gun (shotgun - iconic)
+            ctx.save();
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(6, 34);
+            ctx.lineTo(-6, 38);
+            ctx.stroke();
+            ctx.restore();
+
+            // Legs (black pants)
+            ctx.save();
+            ctx.strokeStyle = '#191a1b';
+            ctx.lineWidth = 7;
+            ctx.lineCap = 'round';
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(17, 43);
+            ctx.lineTo(14, 53);
+            ctx.stroke();
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(29, 44);
+            ctx.lineTo(29, 53);
+            ctx.stroke();
+            ctx.restore();
+
+            // Boots
+            ctx.save();
+            ctx.fillStyle = '#333';
+            ctx.fillRect(12, 51, 6, 4);
+            ctx.fillRect(27, 51, 7, 4);
+            ctx.restore();
+
+            // Head (Arnold face, sunglasses)
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(23, 9, 8, 9, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#b38e6a'; // flesh tone
+            ctx.shadowColor = '#333';
+            ctx.shadowBlur = 4;
+            ctx.fill();
+
+            // Jawline
+            ctx.beginPath();
+            ctx.moveTo(16, 10);
+            ctx.quadraticCurveTo(16, 18, 23, 18);
+            ctx.quadraticCurveTo(30, 18, 30, 10);
+            ctx.strokeStyle = '#a4754f';
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.5;
+            ctx.stroke();
+
+            // Sunglasses
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#222';
+            ctx.fillRect(16.5, 7, 6, 6); // left lens
+            ctx.fillRect(23.5, 7, 7, 6); // right lens
+            ctx.fillStyle = '#444';
+            ctx.fillRect(22.5, 9, 3, 2); // bridge
+            // Subtle red glow to right lens (robot eye)
+            ctx.save();
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(28, 10, 2.2, 0, Math.PI * 2);
+            ctx.fillStyle = '#e11';
+            ctx.shadowColor = '#f00';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.restore();
+
+            // Hair (dark, flat-top/brush style)
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(23, 4, 8, 4, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#231f1b';
+            ctx.shadowBlur = 0;
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
+
+            // Chrome endoskeleton highlight (slight, under sunglasses)
+            ctx.save();
+            ctx.globalAlpha = 0.18;
+            ctx.beginPath();
+            ctx.arc(29, 13, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#bbb';
+            ctx.fill();
+            ctx.restore();
+
+            ctx.restore();
         }
 
         // Draw bullets
         this.bullets.forEach(b => b.render(ctx));
     }
 }
-
-// (The rest of the file remains unchanged...)
 
 class Bullet {
     constructor(x, y, speed, vy) {
@@ -174,7 +239,7 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.width = 38;
-        this.height = 52;
+        this.height = 28;
         this.speed = speed;
         this.color = '#6c6c6c';
         this.dead = false;
@@ -202,180 +267,48 @@ class Enemy {
         ctx.save();
         ctx.translate(this.x, this.y);
 
-        // === T-3000 Endoskeleton (stylized, right-facing, metallic, blue-gray, menacing) ===
+        // --- T-3000 Terminator stylized sprite ---
+        // Body
+        ctx.save();
+        ctx.fillStyle = '#999'; // Silver color for T-3000
+        ctx.fillRect(10, 10, 18, 28); // Body
+        ctx.fillStyle = '#444'; // Darker for details
+        ctx.fillRect(10, 10, 18, 4); // Neck
+        ctx.fillRect(10, 14, 4, 10); // Left arm
+        ctx.fillRect(24, 14, 4, 10); // Right arm
+        ctx.fillRect(10, 38, 4, 10); // Left leg
+        ctx.fillRect(24, 38, 4, 10); // Right leg
+        ctx.restore();
 
-        // Shadow
+        // Red sensor eye
+        ctx.save();
+        ctx.fillStyle = '#e11'; // Red color for eye
+        ctx.beginPath();
+        ctx.arc(19, 10, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Metallic highlight
         ctx.save();
         ctx.globalAlpha = 0.18;
         ctx.beginPath();
-        ctx.ellipse(19, 49, 15, 5, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#111';
-        ctx.fill();
-        ctx.restore();
-
-        // LEGS
-        ctx.save();
-        ctx.strokeStyle = '#7fb6c7';
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        // Left leg
-        ctx.beginPath();
-        ctx.moveTo(16, 38);
-        ctx.lineTo(13, 50);
-        ctx.stroke();
-        // Right leg
-        ctx.beginPath();
-        ctx.moveTo(22, 38);
-        ctx.lineTo(25, 51);
-        ctx.stroke();
-        // Joints
-        ctx.save();
-        ctx.fillStyle = '#d2f4ff';
-        ctx.beginPath();
-        ctx.arc(13, 50, 2, 0, Math.PI * 2);
-        ctx.arc(25, 51, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        ctx.restore();
-
-        // FEET
-        ctx.save();
-        ctx.fillStyle = '#333';
-        ctx.beginPath();
-        ctx.ellipse(12, 53, 4, 2, 0, 0, Math.PI * 2);
-        ctx.ellipse(25, 54, 4, 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // TORSO
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(14, 20);
-        ctx.lineTo(25, 20);
-        ctx.lineTo(28, 39);
-        ctx.lineTo(11, 39);
-        ctx.closePath();
-        ctx.fillStyle = '#7fb6c7';
-        ctx.shadowColor = '#9fd7ee';
-        ctx.shadowBlur = 10;
-        ctx.globalAlpha = 0.92;
-        ctx.fill();
-        ctx.restore();
-
-        // Spine (central line)
-        ctx.save();
-        ctx.strokeStyle = '#d2f4ff';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(19.5, 21);
-        ctx.lineTo(18.5, 39);
-        ctx.stroke();
-        ctx.restore();
-
-        // ARMS
-        ctx.save();
-        ctx.strokeStyle = '#7fb6c7';
-        ctx.lineWidth = 6;
-        ctx.lineCap = 'round';
-        // Left arm (back: holding gun)
-        ctx.beginPath();
-        ctx.moveTo(12, 23);
-        ctx.lineTo(3, 33);
-        ctx.stroke();
-        // Right arm (front)
-        ctx.beginPath();
-        ctx.moveTo(27, 23);
-        ctx.lineTo(36, 30);
-        ctx.stroke();
-        // Elbow joints
-        ctx.save();
-        ctx.fillStyle = '#d2f4ff';
-        ctx.beginPath();
-        ctx.arc(3, 33, 2, 0, Math.PI * 2);
-        ctx.arc(36, 30, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        ctx.restore();
-
-        // Forearm blade (T-3000 has morphing blade-arms)
-        ctx.save();
-        ctx.strokeStyle = '#aef6ff';
-        ctx.lineWidth = 3.5;
-        ctx.shadowColor = '#5ffbff';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.moveTo(36, 30);
-        ctx.lineTo(44, 23);
-        ctx.stroke();
-        ctx.restore();
-
-        // CHEST glowing core
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(19, 28, 4.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#00eaff';
-        ctx.shadowColor = '#00eaff';
-        ctx.shadowBlur = 16;
-        ctx.globalAlpha = 0.85;
-        ctx.fill();
-        ctx.restore();
-
-        // HEAD
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(19, 12, 8, 10, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#7fb6c7';
-        ctx.shadowColor = '#aef6ff';
-        ctx.shadowBlur = 7;
-        ctx.globalAlpha = 0.96;
-        ctx.fill();
-        ctx.restore();
-
-        // Face (angular jaw, stylized)
-        ctx.save();
-        ctx.strokeStyle = '#d2f4ff';
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(14, 17);
-        ctx.lineTo(18, 19);
-        ctx.lineTo(24, 17);
-        ctx.stroke();
-        ctx.restore();
-
-        // Eyes (red, robotic, T-3000 style)
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(16.5, 13, 1.5, 0, Math.PI * 2);
-        ctx.arc(21.5, 13, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#f33';
-        ctx.shadowColor = '#f00';
-        ctx.shadowBlur = 9;
-        ctx.globalAlpha = 0.9;
-        ctx.fill();
-        ctx.restore();
-
-        // Cheek/face highlight
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(24, 10, 2.1, 1.2, 0.3, 0, Math.PI * 2);
+        ctx.arc(14, 10, 5, 0, Math.PI * 2);
         ctx.fillStyle = '#fff';
-        ctx.globalAlpha = 0.12;
         ctx.fill();
         ctx.restore();
 
-        // Extra: nanite "shimmer" overlay on chest (faint animated shimmer)
+        // Underbody "mechanical" lines
         ctx.save();
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        let shimmerY = 23 + Math.sin((performance.now() / 220) + this.x) * 4;
-        ctx.ellipse(19, shimmerY, 7, 2, 0, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.globalAlpha = 0.12;
-        ctx.fill();
-        ctx.restore();
-
+        ctx.moveTo(10, 26);
+        ctx.lineTo(28, 26);
+        ctx.stroke();
         ctx.restore();
 
         this.bullets.forEach(b => b.render(ctx));
+        ctx.restore();
     }
 
     getRect() {
@@ -566,8 +499,8 @@ class GameManager {
         if (this.state !== 'playing') return;
 
         this.frame++;
-        // this.bgScroll += 1.7;
-        // if (this.bgScroll > 64) this.bgScroll = 0;
+        this.bgScroll += 1.7;
+        if (this.bgScroll > 64) this.bgScroll = 0;
 
         // Player movement
         let dx = 0, dy = 0;
@@ -585,274 +518,4 @@ class GameManager {
         this.player.update();
 
         // --- Difficulty progression adjustment ---
-        // Make enemy speed and spawn rate increase more gradually
-
-        // Difficulty factor increases slowly as score increases
-        // For example, using sqrt to flatten early growth, capped at a reasonable max
-        const difficulty = Math.min(Math.sqrt(this.score / 200), 2.5); // Max difficulty factor cap
-
-        // Enemies
-        if (this.spawnTimer <= 0) {
-            const y = getRandomInt(24, GAME_HEIGHT - 60);
-            // Base speed 2..4, add only a gently scaling difficulty
-            const speed = getRandomInt(2, 4) + difficulty;
-            this.enemies.push(new Enemy(GAME_WIDTH + 16, y, speed));
-
-            // Spawn interval is longer at start, decreases with difficulty, but never below a minimum
-            const baseMin = 48, baseMax = 90;
-            const minSpawn = Math.max(baseMin - difficulty * 10, 22);
-            const maxSpawn = Math.max(baseMax - difficulty * 20, 38);
-            this.spawnTimer = getRandomInt(minSpawn, maxSpawn);
-        } else {
-            this.spawnTimer--;
-        }
-
-        this.enemies.forEach(enemy => enemy.update());
-        this.enemies = this.enemies.filter(e => !e.dead);
-
-        // Player bullets vs enemies
-        for (let bullet of this.player.bullets) {
-            for (let enemy of this.enemies) {
-                if (!bullet.dead && !enemy.dead && this.checkCollision(bullet.getRect(), enemy.getRect())) {
-                    bullet.dead = true;
-                    enemy.dead = true;
-                    this.score += 100;
-                    // Particle burst (red/blue-steel/cyan)
-                    for (let i = 0; i < 12; i++) {
-                        this.particles.push(new Particle(
-                            enemy.x + enemy.width/2, 
-                            enemy.y + enemy.height/2, 
-                            i%3===0 ? '#f33' : (i%2===0 ? '#aef6ff' : '#7fb6c7')
-                        ));
-                    }
-                }
-            }
-        }
-
-        // Enemy bullets vs player
-        for (let enemy of this.enemies) {
-            for (let bullet of enemy.bullets) {
-                if (!bullet.dead && this.player.invincible === 0 && this.checkCollision(bullet.getRect(), {
-                    x: this.player.x,
-                    y: this.player.y,
-                    width: this.player.width,
-                    height: this.player.height
-                })) {
-                    bullet.dead = true;
-                    this.player.lives -= 1;
-                    this.player.invincible = 60;
-                    for (let i = 0; i < 10; i++) {
-                        this.particles.push(new Particle(this.player.x + this.player.width/2, this.player.y + this.player.height/2, i%2===0 ? '#aef' : '#bbb'));
-                    }
-                    if (this.player.lives <= 0) {
-                        this.state = 'gameover';
-                        setTimeout(() => this.showGameOver(), 600);
-                    }
-                }
-            }
-        }
-
-        // Enemies vs player (collision)
-        for (let enemy of this.enemies) {
-            if (!enemy.dead && this.player.invincible === 0 && this.checkCollision(enemy.getRect(), {
-                x: this.player.x,
-                y: this.player.y,
-                width: this.player.width,
-                height: this.player.height
-            })) {
-                enemy.dead = true;
-                this.player.lives -= 1;
-                this.player.invincible = 60;
-                for (let i = 0; i < 10; i++) {
-                    this.particles.push(new Particle(this.player.x + this.player.width/2, this.player.y + this.player.height/2, i%2===0 ? '#aef' : '#bbb'));
-                }
-                if (this.player.lives <= 0) {
-                    this.state = 'gameover';
-                    setTimeout(() => this.showGameOver(), 600);
-                }
-            }
-        }
-
-        // Particles
-        this.particles.forEach(p => p.update());
-        this.particles = this.particles.filter(p => p.life > 0);
-    }
-
-    checkCollision(a, b) {
-        return (
-            a.x < b.x + b.width &&
-            a.x + a.width > b.x &&
-            a.y < b.y + b.height &&
-            a.y + a.height > b.y
-        );
-    }
-
-    render() {
-        // Next frame
-        requestAnimationFrame(() => this.render());
-
-        // Always show menu if in menu/gameover state
-        if (this.state === 'menu' && !this.menuDiv) this.showMenu();
-        if (this.state === 'gameover' && !this.menuDiv) this.showGameOver();
-
-        // Draw static background image (no scrolling, always at (0,0))
-        this.ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-        this.drawBackground();
-
-        if (this.state !== 'playing') {
-            // Draw faded overlay for menu/gameover
-            this.ctx.save();
-            this.ctx.globalAlpha = 0.4;
-            this.ctx.fillStyle = "#000";
-            this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-            this.ctx.restore();
-            return;
-        }
-
-        // Update game logic
-        this.update();
-
-        // Player, enemies, bullets
-        this.player.render(this.ctx);
-        this.enemies.forEach(e => e.render(this.ctx));
-        this.particles.forEach(p => p.render(this.ctx));
-
-        // HUD
-        this.drawHUD();
-    }
-
-    drawBackground() {
-        // === Draw static background image, no scrolling, no parallax ===
-        if (backgroundImageLoaded) {
-            // Always draw at 0,0, and tile if needed to fill canvas
-            const imgWidth = backgroundImage.width;
-            const imgHeight = backgroundImage.height;
-            for (let x = 0; x < GAME_WIDTH; x += imgWidth) {
-                for (let y = 0; y < GAME_HEIGHT; y += imgHeight) {
-                    this.ctx.drawImage(backgroundImage, x, y, imgWidth, imgHeight);
-                }
-            }
-        } else {
-            // Fallback: use previous stylized background if image not loaded yet
-            this.ctx.save();
-            // Steel sky gradient
-            let grad = this.ctx.createLinearGradient(0, 0, 0, GAME_HEIGHT);
-            grad.addColorStop(0, '#222325');
-            grad.addColorStop(0.5, '#191a1b');
-            grad.addColorStop(1, '#11090a');
-            this.ctx.fillStyle = grad;
-            this.ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-            // Ruined city skyline silhouette (static, not parallax)
-            for (let layer = 0; layer < 3; layer++) {
-                const yBase = [GAME_HEIGHT - 80, GAME_HEIGHT - 54, GAME_HEIGHT - 32][layer];
-                const color = ['#201e22', '#2c2428', '#3a2a30'][layer];
-                this.ctx.save();
-                this.ctx.globalAlpha = 0.22 + 0.13 * layer;
-                this.ctx.fillStyle = color;
-                this.ctx.beginPath();
-                // Generate blocky buildings
-                for (let x = 0; x <= GAME_WIDTH + 80; x += 40 + Math.random()*20) {
-                    let h = 24 + Math.random() * (18 + layer*9);
-                    this.ctx.rect(x, yBase - h, 24 + Math.random()*10, h);
-                }
-                this.ctx.fill();
-                this.ctx.restore();
-            }
-
-            // Red scanner beam (static position)
-            let scanY = GAME_HEIGHT - 100;
-            this.ctx.save();
-            this.ctx.globalAlpha = 0.15;
-            this.ctx.fillStyle = '#f00';
-            this.ctx.fillRect(0, scanY, GAME_WIDTH, 3);
-            this.ctx.restore();
-
-            // Distant glowing embers (static)
-            for (let i = 0; i < 16; i++) {
-                let px = ((i * 108) % (GAME_WIDTH + 32));
-                let py = GAME_HEIGHT - 20 - (i * 13) % 68;
-                this.ctx.beginPath();
-                this.ctx.arc(px, py, (i % 6 === 0) ? 2 : 1, 0, Math.PI * 2);
-                this.ctx.fillStyle = (i % 2 === 0) ? '#f33' : '#f99';
-                this.ctx.globalAlpha = 0.28 + (i%2)*0.1;
-                this.ctx.fill();
-            }
-
-            this.ctx.restore();
-        }
-    }
-
-    drawHUD() {
-        // Score
-        this.ctx.save();
-        this.ctx.font = 'bold 20px Segoe UI, Arial';
-        this.ctx.fillStyle = '#f33';
-        this.ctx.shadowColor = '#f00';
-        this.ctx.shadowBlur = 6;
-        this.ctx.fillText('Score: ' + this.score, 12, 26);
-
-        // Lives - T-800 skulls
-        for (let i = 0; i < this.player.lives; i++) {
-            this.ctx.save();
-            this.ctx.translate(16 + i * 34, 52);
-            this.ctx.scale(0.46, 0.46);
-            this.ctx.beginPath();
-            this.ctx.ellipse(22, 18, 16, 15, 0, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#bbb';
-            this.ctx.shadowColor = '#aaa';
-            this.ctx.shadowBlur = 4;
-            this.ctx.fill();
-
-            // Red eye
-            this.ctx.beginPath();
-            this.ctx.arc(31, 18, 3, 0, Math.PI * 2);
-            this.ctx.fillStyle = '#f00';
-            this.ctx.shadowColor = '#f00';
-            this.ctx.shadowBlur = 6;
-            this.ctx.fill();
-
-            // Jaw
-            this.ctx.save();
-            this.ctx.beginPath();
-            this.ctx.moveTo(35, 29);
-            this.ctx.quadraticCurveTo(30, 36, 19, 33);
-            this.ctx.lineTo(12, 29);
-            this.ctx.strokeStyle = '#888';
-            this.ctx.lineWidth = 2;
-            this.ctx.shadowBlur = 0;
-            this.ctx.stroke();
-            this.ctx.restore();
-
-            this.ctx.restore();
-        }
-        this.ctx.restore();
-    }
-}
-
-// ---- Initialize on DOMContentLoaded ----
-
-function initGame() {
-    const container = document.getElementById('gameContainer');
-    const canvas = document.createElement('canvas');
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-    container.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-
-    // Remove any stray menus from reloads
-    document.querySelectorAll('.menu').forEach(e => e.remove());
-
-    // Start game manager (menu will show immediately)
-    window.arcadeShooter = new GameManager(canvas, ctx);
-}
-
-window.addEventListener('DOMContentLoaded', initGame);
-
-// ---- Utility functions ----
-function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-}
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+        // Make enemy
